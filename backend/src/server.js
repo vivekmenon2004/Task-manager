@@ -16,3 +16,6 @@ app.get('/api/health', (req, res) => {
 app.listen(port, () => {
   console.log(`Task Manager API listening on http://localhost:${port}`);
 });
+
+// Initialize the PostgreSQL connection pool after dotenv has loaded.
+require('./db/database');
