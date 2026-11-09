@@ -4,11 +4,12 @@ import TaskItem from './TaskItem';
 interface TaskListProps {
   tasks: Task[];
   busyTaskId: number | null;
+  onEdit: (task: Task) => void;
   onComplete: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-export default function TaskList({ tasks, busyTaskId, onComplete, onDelete }: TaskListProps) {
+export default function TaskList({ tasks, busyTaskId, onEdit, onComplete, onDelete }: TaskListProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] border-collapse text-left text-sm">
@@ -28,6 +29,7 @@ export default function TaskList({ tasks, busyTaskId, onComplete, onDelete }: Ta
               key={task.id}
               task={task}
               busy={busyTaskId === task.id}
+              onEdit={onEdit}
               onComplete={onComplete}
               onDelete={onDelete}
             />

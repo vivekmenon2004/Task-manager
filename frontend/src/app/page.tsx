@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import TaskForm from '@/components/TaskForm';
 import TaskList from '@/components/TaskList';
-import { completeTask, createTask, deleteTask, getTasks } from '@/lib/api';
+import { completeTask, createTask, deleteTask, getTasks, updateTask } from '@/lib/api';
 import type { Task, TaskInput } from '@/types/task';
 
 export default function Home() {
@@ -13,6 +13,7 @@ export default function Home() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<number | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -42,11 +43,31 @@ export default function Home() {
     setReloadKey((currentKey) => currentKey + 1);
   }
 
-  async function handleCreate(taskInput: TaskInput) {
-    const createdTask = await createTask(taskInput);
-    setTasks((currentTasks) => [createdTask, ...currentTasks]);
+  async function handleSaveTask(taskInput: TaskInput) {
+    if (editingTask) {
+      const updatedTask = await updateTask(editingTask.id, taskInput);
+      setTasks((currentTasks) =>
+        currentTasks.map((task) => (task.id === editingTask.id ? updatedTask : task)),
+      );
+    } else {
+      const createdTask = await createTask(taskInput);
+      setTasks((currentTasks) => [createdTask, ...currentTasks]);
+    }
+
     setLoadError(null);
     setShowTaskForm(false);
+    setEditingTask(null);
+  }
+
+  function handleEdit(task: Task) {
+    setEditingTask(task);
+    setShowTaskForm(true);
+    setActionError(null);
+  }
+
+  function handleCancelForm() {
+    setShowTaskForm(false);
+    setEditingTask(null);
   }
 
   async function handleComplete(id: number) {
@@ -92,7 +113,14 @@ export default function Home() {
           </div>
           <button
             type="button"
-            onClick={() => setShowTaskForm((isOpen) => !isOpen)}
+            onClick={() => {
+              if (showTaskForm && !editingTask) {
+                setShowTaskForm(false);
+              } else {
+                setEditingTask(null);
+                setShowTaskForm(true);
+              }
+            }}
             aria-expanded={showTaskForm}
             className="inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
           >
@@ -102,7 +130,12 @@ export default function Home() {
         </header>
 
         {showTaskForm && (
-          <TaskForm onSubmit={handleCreate} onCancel={() => setShowTaskForm(false)} />
+          <TaskForm
+            key={editingTask?.id ?? 'new'}
+            initialTask={editingTask ?? undefined}
+            onSubmit={handleSaveTask}
+            onCancel={handleCancelForm}
+          />
         )}
 
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -135,6 +168,7 @@ export default function Home() {
             <TaskList
               tasks={tasks}
               busyTaskId={busyTaskId}
+              onEdit={handleEdit}
               onComplete={(id) => void handleComplete(id)}
               onDelete={(id) => void handleDelete(id)}
             />

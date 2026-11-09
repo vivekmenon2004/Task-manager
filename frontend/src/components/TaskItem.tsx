@@ -9,11 +9,12 @@ const priorityStyles: Record<Priority, string> = {
 interface TaskItemProps {
   task: Task;
   busy: boolean;
+  onEdit: (task: Task) => void;
   onComplete: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-export default function TaskItem({ task, busy, onComplete, onDelete }: TaskItemProps) {
+export default function TaskItem({ task, busy, onEdit, onComplete, onDelete }: TaskItemProps) {
   const createdDate = new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
@@ -42,6 +43,14 @@ export default function TaskItem({ task, busy, onComplete, onDelete }: TaskItemP
       </td>
       <td className="whitespace-nowrap px-5 py-4 align-top">
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(task)}
+            disabled={busy}
+            className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Edit
+          </button>
           <button
             type="button"
             onClick={() => onComplete(task.id)}
