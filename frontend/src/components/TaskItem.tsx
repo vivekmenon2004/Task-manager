@@ -23,8 +23,12 @@ export default function TaskItem({ task, busy, onEdit, onComplete, onDelete }: T
   }).format(new Date(task.created_at));
 
   return (
-    <tr className="border-b border-slate-100 last:border-0">
-      <td className="px-5 py-4 align-top font-medium text-slate-900">{task.title}</td>
+    <tr className={`border-b border-slate-100 last:border-0 ${task.completed ? 'bg-emerald-50/40' : ''}`}>
+      <td className="px-5 py-4 align-top font-medium">
+        <span className={task.completed ? 'text-slate-500 line-through' : 'text-slate-900'}>
+          {task.title}
+        </span>
+      </td>
       <td className="max-w-xs px-5 py-4 align-top text-sm text-slate-600">
         {task.description || <span className="text-slate-400">—</span>}
       </td>
@@ -34,7 +38,9 @@ export default function TaskItem({ task, busy, onEdit, onComplete, onDelete }: T
         </span>
       </td>
       <td className="px-5 py-4 align-top text-sm">
-        <span className={task.completed ? 'font-medium text-emerald-700' : 'text-slate-600'}>
+        <span className={task.completed
+          ? 'inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800'
+          : 'text-slate-600'}>
           {task.completed ? '✓ Completed' : 'Pending'}
         </span>
       </td>
@@ -51,14 +57,16 @@ export default function TaskItem({ task, busy, onEdit, onComplete, onDelete }: T
           >
             Edit
           </button>
-          <button
-            type="button"
-            onClick={() => onComplete(task.id)}
-            disabled={busy || task.completed}
-            className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy ? 'Saving…' : 'Complete'}
-          </button>
+          {!task.completed && (
+            <button
+              type="button"
+              onClick={() => onComplete(task.id)}
+              disabled={busy}
+              className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? 'Saving…' : 'Complete'}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onDelete(task.id)}
