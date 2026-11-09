@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import DeleteTaskDialog from '@/components/DeleteTaskDialog';
 import TaskForm from '@/components/TaskForm';
 import TaskList from '@/components/TaskList';
 import { completeTask, createTask, deleteTask, getTasks, updateTask } from '@/lib/api';
@@ -12,6 +13,9 @@ export default function Home() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<number | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -86,18 +90,35 @@ export default function Home() {
     }
   }
 
-  async function handleDelete(id: number) {
-    setActionError(null);
-    setBusyTaskId(id);
+  function handleDeleteRequest(id: number) {
+    const task = tasks.find((currentTask) => currentTask.id === id);
+    if (!task) return;
 
+    setTaskToDelete(task);
+    setDeleteError(null);
+    setActionError(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!taskToDelete) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await deleteTask(id);
-      setTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
+      await deleteTask(taskToDelete.id);
+      setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskToDelete.id));
+      setTaskToDelete(null);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Unable to delete task.');
+      setDeleteError(error instanceof Error ? error.message : 'Unable to delete task.');
     } finally {
-      setBusyTaskId(null);
+      setIsDeleting(false);
     }
+  }
+
+  function handleCancelDelete() {
+    if (isDeleting) return;
+    setTaskToDelete(null);
+    setDeleteError(null);
   }
 
   return (
@@ -170,7 +191,7 @@ export default function Home() {
               busyTaskId={busyTaskId}
               onEdit={handleEdit}
               onComplete={(id) => void handleComplete(id)}
-              onDelete={(id) => void handleDelete(id)}
+              onDelete={handleDeleteRequest}
             />
           )}
         </section>
@@ -181,6 +202,16 @@ export default function Home() {
           </p>
         )}
       </div>
+
+      {taskToDelete && (
+        <DeleteTaskDialog
+          taskTitle={taskToDelete.title}
+          isDeleting={isDeleting}
+          error={deleteError}
+          onConfirm={() => void handleConfirmDelete()}
+          onCancel={handleCancelDelete}
+        />
+      )}
     </main>
   );
 }
