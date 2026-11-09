@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DeleteTaskDialog from '@/components/DeleteTaskDialog';
 import TaskForm from '@/components/TaskForm';
 import TaskList from '@/components/TaskList';
@@ -19,16 +19,20 @@ export default function Home() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const taskMutationRevision = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    const requestRevision = taskMutationRevision.current;
 
     getTasks()
       .then((loadedTasks) => {
-        if (!cancelled) setTasks(loadedTasks);
+        if (!cancelled && requestRevision === taskMutationRevision.current) {
+          setTasks(loadedTasks);
+        }
       })
       .catch((error: unknown) => {
-        if (!cancelled) {
+        if (!cancelled && requestRevision === taskMutationRevision.current) {
           setLoadError(error instanceof Error ? error.message : 'Unknown API error');
         }
       })
@@ -43,6 +47,7 @@ export default function Home() {
 
   function retryLoadTasks() {
     setLoadError(null);
+    setActionError(null);
     setLoading(true);
     setReloadKey((currentKey) => currentKey + 1);
   }
@@ -50,15 +55,21 @@ export default function Home() {
   async function handleSaveTask(taskInput: TaskInput) {
     if (editingTask) {
       const updatedTask = await updateTask(editingTask.id, taskInput);
+      taskMutationRevision.current += 1;
       setTasks((currentTasks) =>
         currentTasks.map((task) => (task.id === editingTask.id ? updatedTask : task)),
       );
     } else {
       const createdTask = await createTask(taskInput);
-      setTasks((currentTasks) => [createdTask, ...currentTasks]);
+      taskMutationRevision.current += 1;
+      setTasks((currentTasks) => [
+        createdTask,
+        ...currentTasks.filter((task) => task.id !== createdTask.id),
+      ]);
     }
 
     setLoadError(null);
+    setActionError(null);
     setShowTaskForm(false);
     setEditingTask(null);
   }
@@ -72,6 +83,7 @@ export default function Home() {
   function handleCancelForm() {
     setShowTaskForm(false);
     setEditingTask(null);
+    setActionError(null);
   }
 
   async function handleComplete(id: number) {
@@ -80,6 +92,7 @@ export default function Home() {
 
     try {
       const updatedTask = await completeTask(id);
+      taskMutationRevision.current += 1;
       setTasks((currentTasks) =>
         currentTasks.map((task) => (task.id === id ? updatedTask : task)),
       );
@@ -106,8 +119,10 @@ export default function Home() {
     setDeleteError(null);
     try {
       await deleteTask(taskToDelete.id);
+      taskMutationRevision.current += 1;
       setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskToDelete.id));
       setTaskToDelete(null);
+      setActionError(null);
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : 'Unable to delete task.');
     } finally {
@@ -135,6 +150,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => {
+              setActionError(null);
               if (showTaskForm && !editingTask) {
                 setShowTaskForm(false);
               } else {
