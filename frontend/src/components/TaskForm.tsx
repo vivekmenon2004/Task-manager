@@ -18,6 +18,12 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (title.trim().length === 0) {
+      setError('Title is required.');
+      return;
+    }
+
     setSaving(true);
 
     try {
