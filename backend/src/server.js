@@ -16,6 +16,23 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/tasks', taskRoutes);
 
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid JSON body' });
+  }
+
+  console.error('Unhandled API error:', error);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 app.listen(port, () => {
   console.log(`Task Manager API listening on http://localhost:${port}`);
 });

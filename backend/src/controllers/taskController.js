@@ -25,7 +25,7 @@ async function getTask(req, res, next) {
 
 async function createTask(req, res, next) {
   try {
-    const { title, description = null, priority = 'MEDIUM' } = req.body || {};
+    const { title, description, priority } = req.validatedTask;
     const { rows } = await query(
       `INSERT INTO tasks (title, description, priority)
        VALUES ($1, $2, $3)
@@ -40,7 +40,7 @@ async function createTask(req, res, next) {
 
 async function updateTask(req, res, next) {
   try {
-    const { title, description = null, priority = 'MEDIUM' } = req.body || {};
+    const { title, description, priority } = req.validatedTask;
     const { rows } = await query(
       `UPDATE tasks
        SET title = $1, description = $2, priority = $3, updated_at = NOW()
